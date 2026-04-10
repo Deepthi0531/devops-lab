@@ -4,7 +4,7 @@ name: CI — Run Tests
 on:
   push:
     branches:
-      - "**"       # matches ALL branches
+      - "**"        # matches ALL branches
   pull_request:
     branches:
       - main        # run CI when a PR targets main
@@ -14,8 +14,19 @@ jobs:
     name: Run pytest
     runs-on: ubuntu-latest   # fresh Ubuntu VM per run
 
-    steps:
+    # CRITICAL: Added Redis service container so tests don't get "Connection Refused"
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
+    steps:
       # Step 1: Check out the repository code
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,9 +50,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r app/requirements.txt
+          # Ensure pytest is installed along with app requirements
+          pip install -r app/requirements.txt pytest
 
-      # Step 5: Run pytest with verbose output and coverage
+      # Step 5: Run pytest with verbose output
       - name: Run tests with pytest
         working-directory: app
         run: |
