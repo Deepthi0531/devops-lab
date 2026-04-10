@@ -58,3 +58,17 @@ def test_stats_returns_full_info(client):
     assert "visits" in data
     assert "hostname" in data
     assert "redis_host" in data
+
+import pytest
+from app import app
+
+@pytest.fixture
+def client():
+    with app.test_client() as client:
+        yield client
+
+def test_health_route(client):
+    """Test that the health endpoint returns 200 OK"""
+    response = client.get('/health')
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ok"}
